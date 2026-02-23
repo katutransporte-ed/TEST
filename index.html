@@ -1,0 +1,2944 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Workhome | Plataforma de Investimentos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    :root {
+      --gold: #FFD700;
+      --gold-dark: #B8860B;
+      --gold-light: #FFF176;
+      --gold-glow: rgba(255,215,0,0.18);
+      --black: #080808;
+      --black-light: #111111;
+      --black-lighter: #1C1C1C;
+      --black-card: #161616;
+      --white: #F5F5F0;
+      --gray: #666666;
+      --gray-light: #AAAAAA;
+      --success: #00E676;
+      --danger: #FF1744;
+      --warning: #FFC107;
+      --info: #29B6F6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--black);
+      color: var(--white);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: -30%;
+      left: -20%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(255,215,0,0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ─── TOAST ─── */
+    #toastContainer {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      z-index: 99999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      background: var(--black-lighter);
+      border-radius: 12px;
+      padding: 14px 20px;
+      font-size: 0.9rem;
+      border-left: 4px solid var(--gold);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+      animation: toastIn 0.3s ease forwards;
+      max-width: 320px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toast.success { border-left-color: var(--success); }
+    .toast.danger  { border-left-color: var(--danger); }
+    .toast.warning { border-left-color: var(--warning); }
+    .toast.info    { border-left-color: var(--info); }
+
+    .toast-icon { font-size: 1.2rem; }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(40px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes toastOut {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(40px); }
+    }
+
+    /* ─── LOADING SPINNER ─── */
+    .spinner-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8,8,8,0.85);
+      z-index: 50000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .spinner-overlay.active { display: flex; }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid var(--black-lighter);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .spinner-text { color: var(--gray-light); font-size: 0.9rem; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── SESSION TIMER ─── */
+    #sessionTimer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: var(--danger);
+      color: #fff;
+      text-align: center;
+      padding: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      z-index: 9998;
+      display: none;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+    /* ─── AUTH ─── */
+    .auth-screen {
+      display: flex;
+      position: fixed;
+      inset: 0;
+      background: var(--black);
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .auth-screen.hidden { display: none; }
+
+    .auth-container {
+      background: var(--black-light);
+      border-radius: 24px;
+      padding: 50px 40px;
+      max-width: 460px;
+      width: 100%;
+      border: 1px solid rgba(255,215,0,0.2);
+      box-shadow: 0 0 60px rgba(255,215,0,0.08), 0 30px 60px rgba(0,0,0,0.5);
+      animation: authSlide 0.5s cubic-bezier(0.34,1.56,0.64,1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-container::before {
+      content: '';
+      position: absolute;
+      top: -1px; left: -1px; right: -1px;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    @keyframes authSlide {
+      from { transform: translateY(60px) scale(0.95); opacity: 0; }
+      to   { transform: translateY(0) scale(1); opacity: 1; }
+    }
+
+    .auth-logo {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .auth-logo .logo {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      margin: 0 auto 20px;
+      border-radius: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--black);
+      box-shadow: 0 10px 40px rgba(255,215,0,0.3);
+    }
+
+    .auth-logo h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 2rem;
+      color: var(--gold);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    .auth-logo p { color: var(--gray-light); font-size: 0.9rem; margin-top: 6px; }
+
+    .auth-form { display: none; }
+    .auth-form.active { display: block; animation: fadeIn 0.3s ease; }
+
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+    .auth-form h2 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem;
+      color: var(--white);
+      margin-bottom: 28px;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .form-group { margin-bottom: 18px; }
+
+    .form-group label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--gray-light);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1.5px solid var(--black-lighter);
+      border-radius: 12px;
+      font-size: 16px;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--black-lighter);
+      color: var(--white);
+      transition: all 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--gold);
+      background: rgba(255,215,0,0.03);
+      box-shadow: 0 0 0 4px rgba(255,215,0,0.08);
+    }
+
+    .form-error {
+      font-size: 0.78rem;
+      color: var(--danger);
+      margin-top: 6px;
+      display: none;
+    }
+
+    .btn-primary {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: var(--black);
+      border: none;
+      border-radius: 12px;
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 8px 24px rgba(255,215,0,0.25);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 14px 32px rgba(255,215,0,0.4);
+    }
+
+    .btn-primary:active { transform: scale(0.98); }
+
+    .btn-primary.loading::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .auth-form a {
+      color: var(--gold);
+      text-decoration: none;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+
+    .auth-form a:hover { opacity: 0.75; }
+
+    .auth-toggle {
+      text-align: center;
+      margin-top: 22px;
+      font-size: 0.88rem;
+      color: var(--gray-light);
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      background: rgba(17,17,17,0.95);
+      backdrop-filter: blur(20px);
+      padding: 16px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255,215,0,0.15);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .header-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-logo {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      color: var(--black);
+      font-size: 1.1rem;
+    }
+
+    header h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.4rem;
+      color: var(--gold);
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    /* Session bar */
+    .session-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--black-lighter);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      color: var(--gray-light);
+    }
+
+    .session-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: blink 2s infinite;
+    }
+
+    @keyframes blink { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--black-lighter);
+      padding: 6px 14px 6px 6px;
+      border-radius: 30px;
+      border: 1px solid rgba(255,215,0,0.2);
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      color: var(--black);
+      font-size: 1rem;
+    }
+
+    .user-details {}
+    .user-details .uname { font-weight: 600; font-size: 0.88rem; color: var(--gold); }
+    .user-details .uphone { font-size: 0.75rem; color: var(--gray); }
+
+    .admin-badge {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: var(--black);
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-logout {
+      background: transparent;
+      color: var(--gray-light);
+      border: 1px solid var(--black-lighter);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ─── LAYOUT ─── */
+    .container {
+      padding: 28px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 20px;
+      max-width: 1500px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .col-12 { grid-column: span 12; }
+    .col-8  { grid-column: span 8; }
+    .col-6  { grid-column: span 6; }
+    .col-4  { grid-column: span 4; }
+    .col-3  { grid-column: span 3; }
+
+    /* ─── CARDS ─── */
+    .card {
+      background: var(--black-card);
+      border-radius: 20px;
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,0.05);
+      transition: border-color 0.3s, box-shadow 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,215,0,0.3), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .card:hover { border-color: rgba(255,215,0,0.15); box-shadow: 0 8px 40px rgba(0,0,0,0.4); }
+    .card:hover::after { opacity: 1; }
+
+    .card-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gray);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* ─── SALDO ─── */
+    .saldo-card {
+      background: linear-gradient(135deg, #111111 0%, #1a1500 100%);
+      border-color: rgba(255,215,0,0.2);
+    }
+
+    .saldo-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 3rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
+      margin: 8px 0 20px;
+      word-break: break-word;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold-dark), var(--gold), var(--gold-light));
+      border-radius: 10px;
+      transition: width 1s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    .progress-label {
+      font-size: 0.78rem;
+      color: var(--gray);
+      margin-bottom: 20px;
+    }
+
+    .saldo-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* ─── STAT CARDS ─── */
+    .stat-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--gold);
+      line-height: 1.2;
+      word-break: break-all;
+    }
+
+    .stat-label {
+      font-size: 0.78rem;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+
+    .stat-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.78rem;
+      margin-top: 6px;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .trend-up   { background: rgba(0,230,118,0.12); color: var(--success); }
+    .trend-down { background: rgba(255,23,68,0.12); color: var(--danger); }
+
+    /* ─── BUTTONS ─── */
+    .btn {
+      padding: 13px 20px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: 'Syne', sans-serif;
+      font-weight: 700;
+      font-size: 0.88rem;
+      transition: all 0.2s;
+      min-height: 48px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      -webkit-tap-highlight-color: transparent;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: var(--black);
+      box-shadow: 0 4px 16px rgba(255,215,0,0.2);
+    }
+
+    .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,215,0,0.35); }
+    .btn-gold:active { transform: scale(0.98); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--gold);
+      border: 1.5px solid rgba(255,215,0,0.4);
+    }
+
+    .btn-outline:hover { background: rgba(255,215,0,0.08); border-color: var(--gold); }
+
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-success { background: var(--success); color: var(--black); }
+    .btn-ghost { background: var(--black-lighter); color: var(--gray-light); }
+    .btn-ghost:hover { color: var(--white); background: var(--black-lighter); border-color: var(--gray); }
+
+    .btn-sm { padding: 8px 14px; font-size: 0.78rem; min-height: 36px; }
+    .btn-full { width: 100%; }
+
+    /* ─── DEVICE INFO CARD ─── */
+    .device-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .device-info-item {
+      background: var(--black-lighter);
+      border-radius: 12px;
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .device-info-item .di-label {
+      font-size: 0.72rem;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .device-info-item .di-value {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--white);
+      word-break: break-word;
+    }
+
+    .device-info-item .di-icon {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+    }
+
+    .location-map {
+      width: 100%;
+      height: 180px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,215,0,0.15);
+      overflow: hidden;
+      position: relative;
+      background: var(--black-lighter);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .location-map iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 12px;
+    }
+
+    .location-placeholder {
+      text-align: center;
+      color: var(--gray);
+    }
+
+    /* ─── QUIZ ─── */
+    .quiz-item {
+      background: var(--black-lighter);
+      padding: 20px;
+      border-radius: 14px;
+      margin-bottom: 14px;
+      border: 1px solid rgba(255,255,255,0.04);
+      transition: border-color 0.2s;
+    }
+
+    .quiz-item.done { border-color: rgba(0,230,118,0.25); }
+    .quiz-item:hover { border-color: rgba(255,215,0,0.2); }
+
+    .quiz-question {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+
+    .quiz-done-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0,230,118,0.12);
+      color: var(--success);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .quiz-options { display: flex; flex-direction: column; gap: 8px; }
+
+    .quiz-option {
+      padding: 12px 18px;
+      background: rgba(255,255,255,0.03);
+      border: 1.5px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--gray-light);
+      font-size: 0.9rem;
+      text-align: left;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .quiz-option:hover { border-color: rgba(255,215,0,0.3); color: var(--white); background: rgba(255,215,0,0.04); }
+    .quiz-option.selected { border-color: var(--gold); background: rgba(255,215,0,0.1); color: var(--gold); font-weight: 600; }
+    .quiz-option.correct  { border-color: var(--success); background: rgba(0,230,118,0.1); color: var(--success); }
+    .quiz-option.wrong    { border-color: var(--danger); background: rgba(255,23,68,0.1); color: var(--danger); }
+    .quiz-option:active   { transform: scale(0.99); }
+
+    /* ─── HISTORY LIST ─── */
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .history-item:last-child { border-bottom: none; }
+
+    .hi-left { display: flex; align-items: center; gap: 12px; }
+
+    .hi-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .hi-icon.deposit  { background: rgba(0,230,118,0.12); }
+    .hi-icon.withdraw { background: rgba(255,23,68,0.12); }
+    .hi-icon.invest   { background: rgba(255,215,0,0.12); }
+
+    .hi-desc { font-size: 0.88rem; color: var(--white); }
+    .hi-date { font-size: 0.75rem; color: var(--gray); margin-top: 3px; }
+    .hi-amount { font-weight: 700; font-size: 0.95rem; white-space: nowrap; }
+    .hi-amount.positive { color: var(--success); }
+    .hi-amount.negative { color: var(--danger); }
+
+    /* ─── PLANS TABLE ─── */
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .plan-card {
+      background: var(--black-lighter);
+      border-radius: 16px;
+      padding: 22px;
+      border: 1.5px solid rgba(255,255,255,0.06);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .plan-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold-dark), var(--gold));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .plan-card:hover { border-color: rgba(255,215,0,0.3); transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.4); }
+    .plan-card:hover::before { opacity: 1; }
+    .plan-card.popular { border-color: rgba(255,215,0,0.4); }
+    .plan-card.popular::before { opacity: 1; }
+
+    .popular-badge {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: var(--gold);
+      color: var(--black);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-family: 'Syne', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .plan-level {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 6px;
+    }
+
+    .plan-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .plan-stats { margin-bottom: 18px; }
+
+    .plan-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.84rem;
+    }
+
+    .plan-stat:last-child { border-bottom: none; }
+    .plan-stat-label { color: var(--gray); }
+    .plan-stat-value { color: var(--success); font-weight: 600; }
+
+    /* ─── CÂMBIO ─── */
+    .cambio-display {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .cambio-value {
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--gold);
+    }
+
+    .cambio-label { font-size: 0.85rem; color: var(--gray); }
+
+    .cambio-rates-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .rate-chip {
+      background: var(--black-lighter);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .rate-chip .rc-currency { font-size: 0.72rem; color: var(--gray); text-transform: uppercase; margin-bottom: 4px; }
+    .rate-chip .rc-value { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; color: var(--white); }
+
+    .converter-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .input-group { margin-bottom: 0; }
+
+    .input-group label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--gray-light);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .input-group input,
+    .input-group select,
+    .input-group textarea {
+      width: 100%;
+      padding: 13px 16px;
+      border-radius: 12px;
+      border: 1.5px solid rgba(255,255,255,0.06);
+      font-size: 15px;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--black-lighter);
+      color: var(--white);
+      transition: all 0.2s;
+      min-height: 48px;
+    }
+
+    .input-group input:focus,
+    .input-group select:focus,
+    .input-group textarea:focus {
+      outline: none;
+      border-color: var(--gold);
+      box-shadow: 0 0 0 4px rgba(255,215,0,0.08);
+    }
+
+    .input-group select option { background: var(--black-lighter); }
+
+    .converter-result {
+      background: linear-gradient(135deg, rgba(255,215,0,0.08), rgba(255,215,0,0.03));
+      border: 1px solid rgba(255,215,0,0.2);
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+      margin-top: 14px;
+    }
+
+    .converter-result .cr-label { font-size: 0.75rem; color: var(--gray); margin-bottom: 6px; text-transform: uppercase; }
+    .converter-result .cr-value { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--gold); }
+
+    /* ─── ADMIN PANEL ─── */
+    .admin-section { margin-bottom: 30px; }
+    .admin-section-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .admin-widget {
+      background: var(--black-lighter);
+      border-radius: 16px;
+      padding: 20px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .admin-widget h3 {
+      font-family: 'Syne', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+
+    .user-card {
+      background: var(--black-lighter);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(255,255,255,0.04);
+      transition: border-color 0.2s;
+    }
+
+    .user-card:hover { border-color: rgba(255,215,0,0.2); }
+
+    .user-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .user-card-name { font-weight: 600; color: var(--gold); margin-bottom: 4px; }
+    .user-card-sub  { font-size: 0.82rem; color: var(--gray); }
+
+    .user-card-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .ucs { background: var(--black-card); border-radius: 10px; padding: 10px; text-align: center; }
+    .ucs .ucs-label { font-size: 0.68rem; color: var(--gray); text-transform: uppercase; margin-bottom: 4px; }
+    .ucs .ucs-value { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; color: var(--white); }
+
+    /* Device info in admin */
+    .device-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--black-card);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      color: var(--gray-light);
+      margin: 3px;
+    }
+
+    .activity-item {
+      background: var(--black-card);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      border-left: 3px solid rgba(255,215,0,0.4);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .ai-left .ai-phone { font-size: 0.82rem; font-weight: 600; color: var(--gold); margin-bottom: 3px; }
+    .ai-left .ai-desc  { font-size: 0.82rem; color: var(--gray-light); }
+    .ai-date { font-size: 0.72rem; color: var(--gray); white-space: nowrap; }
+
+    /* ─── MODAL ─── */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(6px);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: var(--black-light);
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 580px;
+      width: 100%;
+      border: 1px solid rgba(255,215,0,0.2);
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    @keyframes modalIn {
+      from { transform: scale(0.9) translateY(20px); opacity: 0; }
+      to   { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .modal-header h3 { font-family: 'Syne', sans-serif; color: var(--gold); font-size: 1.2rem; font-weight: 700; }
+
+    .modal-close {
+      background: rgba(255,23,68,0.12);
+      color: var(--danger);
+      border: none;
+      border-radius: 8px;
+      width: 34px;
+      height: 34px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .modal-close:hover { background: rgba(255,23,68,0.25); }
+
+    /* ─── CHART ─── */
+    .chart-wrapper { position: relative; height: 240px; }
+
+    /* ─── SCROLLBAR ─── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: var(--black-lighter); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.3); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+    /* ─── PASSWORD STRENGTH ─── */
+    .pass-strength { margin-top: 8px; }
+    .ps-bar { height: 4px; background: var(--black-lighter); border-radius: 4px; overflow: hidden; margin-bottom: 4px; }
+    .ps-fill { height: 100%; border-radius: 4px; transition: all 0.3s; width: 0; }
+    .ps-text { font-size: 0.75rem; }
+
+    /* ─── RECOVERY ─── */
+    .forgot-link { display: block; text-align: right; margin-top: 6px; font-size: 0.82rem; color: var(--gold); cursor: pointer; text-decoration: none; }
+    .forgot-link:hover { opacity: 0.75; }
+
+    /* ─── TABLES ─── */
+    .table-wrapper { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 600px; }
+    thead tr { background: rgba(255,215,0,0.04); }
+    th { padding: 14px 12px; color: var(--gray); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.78rem; border-bottom: 1px solid rgba(255,255,255,0.06); text-align: left; }
+    td { padding: 14px 12px; border-bottom: 1px solid rgba(255,255,255,0.03); color: var(--gray-light); }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+    /* ─── BADGE ─── */
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-family: 'Syne', sans-serif;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-gold    { background: rgba(255,215,0,0.15); color: var(--gold); border: 1px solid rgba(255,215,0,0.3); }
+    .badge-success { background: rgba(0,230,118,0.12); color: var(--success); }
+    .badge-danger  { background: rgba(255,23,68,0.12); color: var(--danger); }
+
+    /* ─── PROFILE ─── */
+    .profile-avatar-large {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--black);
+      margin: 0 auto 16px;
+    }
+
+    /* ─── WELCOME BONUS BANNER ─── */
+    .bonus-banner {
+      background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(184,134,11,0.05));
+      border: 1px solid rgba(255,215,0,0.25);
+      border-radius: 16px;
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .bonus-icon { font-size: 2.2rem; }
+    .bonus-text h3 { font-family: 'Syne', sans-serif; font-weight: 700; color: var(--gold); margin-bottom: 4px; }
+    .bonus-text p  { font-size: 0.85rem; color: var(--gray-light); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 1024px) {
+      .col-8 { grid-column: span 12; }
+      .col-6 { grid-column: span 12; }
+      .col-4 { grid-column: span 6; }
+      .col-3 { grid-column: span 6; }
+    }
+
+    @media (max-width: 768px) {
+      .container { padding: 16px; gap: 14px; }
+      .col-4 { grid-column: span 12; }
+      .col-3 { grid-column: span 6; }
+      .saldo-value { font-size: 2.2rem; }
+      header { padding: 12px 16px; }
+      header h1 { font-size: 1.2rem; }
+      .plans-grid { grid-template-columns: 1fr; }
+      .cambio-rates-grid { grid-template-columns: 1fr 1fr; }
+      .converter-row { grid-template-columns: 1fr; }
+      .device-info-grid { grid-template-columns: 1fr; }
+      .session-bar { display: none; }
+      #toastContainer { bottom: 20px; right: 16px; left: 16px; }
+      .toast { max-width: 100%; }
+    }
+
+    @media (max-width: 480px) {
+      .col-3 { grid-column: span 12; }
+      .saldo-actions { grid-template-columns: 1fr; }
+      .user-card-stats { grid-template-columns: 1fr 1fr; }
+      .admin-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="spinner-overlay" id="spinnerOverlay">
+  <div class="spinner"></div>
+  <span class="spinner-text" id="spinnerText">Carregando...</span>
+</div>
+
+<!-- SESSION EXPIRY WARNING -->
+<div id="sessionTimer"></div>
+
+<!-- TOAST CONTAINER -->
+<div id="toastContainer"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     AUTH SCREEN
+══════════════════════════════════════════════════════ -->
+<div id="authScreen" class="auth-screen">
+  <div class="auth-container">
+    <div class="auth-logo">
+      <div class="logo">W</div>
+      <h1>Workhome</h1>
+      <p>Plataforma de Investimentos Premium</p>
+    </div>
+
+    <!-- Login -->
+    <div id="loginForm" class="auth-form active">
+      <h2>Entrar na Conta</h2>
+      <form onsubmit="fazerLogin(event)">
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="loginEmail" placeholder="seu@email.com" required autocomplete="email">
+          <span class="form-error" id="errLoginEmail"></span>
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="loginSenha" placeholder="Digite sua senha" required autocomplete="current-password">
+          <span class="form-error" id="errLoginSenha"></span>
+          <a class="forgot-link" onclick="mostrarRecuperacao()">Esqueci minha senha</a>
+        </div>
+        <button type="submit" class="btn-primary" id="btnLogin">Entrar</button>
+      </form>
+      <div class="auth-toggle">
+        Não tem conta? <a href="#" onclick="mostrarRegistro(); return false;">Criar Conta</a>
+      </div>
+    </div>
+
+    <!-- Register -->
+    <div id="registroForm" class="auth-form">
+      <h2>Criar Nova Conta</h2>
+      <form onsubmit="criarConta(event)">
+        <div class="form-group">
+          <label>Nome Completo</label>
+          <input type="text" id="regNome" placeholder="Seu nome completo" required autocomplete="name">
+          <span class="form-error" id="errRegNome"></span>
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" id="regEmail" placeholder="seu@email.com" required autocomplete="email">
+          <span class="form-error" id="errRegEmail"></span>
+        </div>
+        <div class="form-group">
+          <label>Telefone (com código do país)</label>
+          <input type="tel" id="regTelefone" placeholder="+244 921 402 002" required autocomplete="tel">
+          <span class="form-error" id="errRegTel"></span>
+        </div>
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="regSenha" placeholder="Mínimo 8 caracteres" required minlength="8"
+                 autocomplete="new-password" oninput="checarForcaSenha(this.value)">
+          <div class="pass-strength">
+            <div class="ps-bar"><div class="ps-fill" id="psBar"></div></div>
+            <span class="ps-text" id="psText" style="color:var(--gray)"></span>
+          </div>
+          <span class="form-error" id="errRegSenha"></span>
+        </div>
+        <div class="form-group">
+          <label>Confirmar Senha</label>
+          <input type="password" id="regConfirma" placeholder="Repita a senha" required autocomplete="new-password">
+          <span class="form-error" id="errRegConfirma"></span>
+        </div>
+        <button type="submit" class="btn-primary" id="btnRegistro">Criar Conta</button>
+      </form>
+      <div class="auth-toggle">
+        Já tem conta? <a href="#" onclick="mostrarLogin(); return false;">Fazer Login</a>
+      </div>
+    </div>
+
+    <!-- Recuperação -->
+    <div id="recuperacaoForm" class="auth-form">
+      <h2>Recuperar Senha</h2>
+      <p style="color:var(--gray-light);font-size:0.88rem;margin-bottom:22px;">
+        Informe seu telefone cadastrado. Você receberá as instruções via WhatsApp.
+      </p>
+      <form onsubmit="enviarRecuperacao(event)">
+        <div class="form-group">
+          <label>Telefone Cadastrado</label>
+          <input type="tel" id="recTel" placeholder="+244 921 402 002" required>
+        </div>
+        <button type="submit" class="btn-primary">Enviar via WhatsApp</button>
+      </form>
+      <div class="auth-toggle">
+        <a href="#" onclick="mostrarLogin(); return false;">← Voltar ao Login</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════ -->
+
+<!-- Modal Editar Usuário -->
+<div id="editUserModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>✏️ Editar Usuário</h3>
+      <button class="modal-close" onclick="fecharModal('editUserModal')">×</button>
+    </div>
+    <div class="input-group" style="margin-bottom:16px;">
+      <label>Nome Completo</label>
+      <input type="text" id="editUserName">
+    </div>
+    <div class="input-group" style="margin-bottom:16px;">
+      <label>Email</label>
+      <input type="email" id="editUserEmail">
+    </div>
+    <div class="input-group" style="margin-bottom:16px;">
+      <label>Telefone (somente leitura)</label>
+      <input type="tel" id="editUserPhone" readonly style="opacity:0.5;">
+    </div>
+    <div class="input-group" style="margin-bottom:16px;">
+      <label>Saldo (Kz)</label>
+      <input type="number" id="editUserSaldo" step="0.01">
+    </div>
+    <div class="input-group" style="margin-bottom:24px;">
+      <label>Ganhos Totais (Kz)</label>
+      <input type="number" id="editUserGanhos" step="0.01">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <button class="btn btn-success" onclick="salvarEdicaoUsuario()">💾 Salvar</button>
+      <button class="btn btn-ghost" onclick="fecharModal('editUserModal')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Configurações de Planos -->
+<div id="configModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>⚙️ Planos de Investimento</h3>
+      <button class="modal-close" onclick="fecharModal('configModal')">×</button>
+    </div>
+    <div id="planosConfig"></div>
+    <button class="btn btn-gold btn-full" style="margin-top:20px;" onclick="salvarConfiguracoes()">💾 Salvar Configurações</button>
+  </div>
+</div>
+
+<!-- Modal Perfil do Usuário -->
+<div id="perfilModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>👤 Meu Perfil</h3>
+      <button class="modal-close" onclick="fecharModal('perfilModal')">×</button>
+    </div>
+    <div style="text-align:center;margin-bottom:24px;">
+      <div class="profile-avatar-large" id="perfilAvatarGrande">U</div>
+    </div>
+    <div class="input-group" style="margin-bottom:16px;">
+      <label>Nome Completo</label>
+      <input type="text" id="perfilNome">
+    </div>
+    <div class="input-group" style="margin-bottom:16px;">
+      <label>Email</label>
+      <input type="email" id="perfilEmail">
+    </div>
+    <div class="input-group" style="margin-bottom:16px;">
+      <label>Telefone</label>
+      <input type="tel" id="perfilTelefone" readonly style="opacity:0.5;">
+    </div>
+    <div class="input-group" style="margin-bottom:24px;">
+      <label>Nova Senha (deixe em branco para não alterar)</label>
+      <input type="password" id="perfilSenha" placeholder="Nova senha" minlength="8">
+    </div>
+    <button class="btn btn-gold btn-full" onclick="salvarPerfil()">💾 Salvar Alterações</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     DASHBOARD
+══════════════════════════════════════════════════════ -->
+<div id="dashboardScreen" style="display:none;">
+
+<header>
+  <div class="header-brand">
+    <div class="header-logo">W</div>
+    <h1>Workhome</h1>
+  </div>
+  <div class="header-right">
+    <div class="session-bar">
+      <div class="session-dot"></div>
+      <span id="sessionCountdown">Sessão activa</span>
+    </div>
+    <div class="user-info">
+      <div class="user-avatar" id="userAvatar">U</div>
+      <div class="user-details">
+        <div class="uname" id="userName">Usuário</div>
+        <div class="uphone" id="userPhone">+244...</div>
+      </div>
+      <span id="adminBadge" class="admin-badge" style="display:none;">Admin</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="abrirPerfil()">👤 Perfil</button>
+    <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ─ SALDO ─ -->
+  <section class="card saldo-card col-12" id="saldoCard">
+    <div class="card-title">
+      <span>Saldo Total</span>
+      <span id="saldoUpdatedAt" style="font-size:0.72rem;color:var(--gray);"></span>
+    </div>
+    <div id="saldo" class="saldo-value">0,00 Kz</div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressBar" style="width:0%"></div>
+    </div>
+    <div class="progress-label">Meta mensal: 100.000,00 Kz • <span id="progressPct">0%</span> atingido</div>
+    <div class="saldo-actions">
+      <button class="btn btn-gold" onclick="abrirWhatsApp('deposito')">💰 Depositar</button>
+      <button class="btn btn-outline" onclick="abrirWhatsApp('retirada')">💸 Retirar</button>
+    </div>
+  </section>
+
+  <!-- ─ STATS ─ -->
+  <section class="card col-3">
+    <div class="card-title">Ganhos Hoje</div>
+    <div class="stat-value" id="ganhosHoje">0,00 Kz</div>
+    <div class="stat-trend trend-up" id="trendGanhos">↑ 0%</div>
+  </section>
+
+  <section class="card col-3">
+    <div class="card-title">Investimentos Ativos</div>
+    <div class="stat-value" id="investimentosAtivos">0</div>
+    <div class="stat-trend trend-up">📈 Portfólio</div>
+  </section>
+
+  <section class="card col-3">
+    <div class="card-title">Taxa de Retorno</div>
+    <div class="stat-value" id="taxaRetorno">0%</div>
+    <div class="stat-trend trend-up">🎯 ROI</div>
+  </section>
+
+  <section class="card col-3" id="userTasksCard">
+    <div class="card-title">Tarefas</div>
+    <div class="stat-value" id="tarefasCompletas">0</div>
+    <div class="stat-trend trend-up">✅ Completas</div>
+  </section>
+
+  <!-- ─ BONUS BANNER ─ -->
+  <section class="card col-12" id="bonusBannerCard" style="padding:0;background:transparent;border:none;">
+    <div class="bonus-banner">
+      <div class="bonus-icon">🎁</div>
+      <div class="bonus-text">
+        <h3>Bónus no Primeiro Depósito!</h3>
+        <p>Nível 1: 500 Kz &nbsp;|&nbsp; Nível 2: 1.000 Kz &nbsp;|&nbsp; Nível 3: 2.000 Kz &nbsp;|&nbsp; Nível 4: 3.000 Kz</p>
+      </div>
+      <button class="btn btn-gold btn-sm" style="margin-left:auto;" onclick="abrirWhatsApp('deposito')">Depositar Agora</button>
+    </div>
+  </section>
+
+  <!-- ─ GRÁFICO ─ -->
+  <section class="card col-8">
+    <div class="card-title">
+      <span>Evolução do Saldo</span>
+      <select id="chartPeriod" onchange="atualizarGrafico()" style="background:var(--black-lighter);border:1px solid rgba(255,255,255,0.06);color:var(--gray-light);padding:5px 10px;border-radius:8px;font-size:0.78rem;cursor:pointer;">
+        <option value="6m">6 Meses</option>
+        <option value="3m">3 Meses</option>
+        <option value="1m">1 Mês</option>
+      </select>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="saldoChart"></canvas>
+    </div>
+  </section>
+
+  <!-- ─ RESUMO FINANCEIRO ─ -->
+  <section class="card col-4">
+    <div class="card-title">Resumo Financeiro</div>
+    <div style="display:flex;flex-direction:column;gap:16px;margin-top:8px;">
+      <div>
+        <div class="stat-label">Ganhos Totais</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--success);" id="ganhosTotais">0,00 Kz</div>
+      </div>
+      <div>
+        <div class="stat-label">Total Investido</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--white);" id="totalInvestido">0,00 Kz</div>
+      </div>
+      <div>
+        <div class="stat-label">Rendimento Médio</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--success);" id="rendimentoMedio">0%</div>
+      </div>
+      <div>
+        <div class="stat-label">Quizzes Completos</div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;color:var(--gold);" id="quizzesTotal">0</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─ CÂMBIO ─ -->
+  <section class="card col-6">
+    <div class="card-title">
+      <span>Câmbio em Tempo Real</span>
+      <span id="cambioUpdated" style="font-size:0.72rem;color:var(--gray);">Actualizando...</span>
+    </div>
+    <div class="cambio-display">
+      <div class="cambio-value" id="taxaUsdKz">—</div>
+      <div class="cambio-label">Kz por 1 USD</div>
+    </div>
+    <div class="cambio-rates-grid" id="cambioRates">
+      <div class="rate-chip"><div class="rc-currency">EUR</div><div class="rc-value" id="rateEUR">—</div></div>
+      <div class="rate-chip"><div class="rc-currency">BRL</div><div class="rc-value" id="rateBRL">—</div></div>
+      <div class="rate-chip"><div class="rc-currency">ZAR</div><div class="rc-value" id="rateZAR">—</div></div>
+      <div class="rate-chip"><div class="rc-currency">GBP</div><div class="rc-value" id="rateGBP">—</div></div>
+    </div>
+    <div class="converter-row">
+      <div class="input-group">
+        <label>Moeda</label>
+        <select id="moedaOrigem">
+          <option value="USD">Dólar (USD)</option>
+          <option value="EUR">Euro (EUR)</option>
+          <option value="BRL">Real (BRL)</option>
+          <option value="ZAR">Rand (ZAR)</option>
+          <option value="GBP">Libra (GBP)</option>
+          <option value="CNY">Yuan (CNY)</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label>Valor</label>
+        <input type="number" id="valorConverter" placeholder="0.00" oninput="converterParaKz()">
+      </div>
+    </div>
+    <div class="converter-result">
+      <div class="cr-label">Resultado em Kwanza</div>
+      <div class="cr-value" id="resultadoConversao">0,00 Kz</div>
+    </div>
+  </section>
+
+  <!-- ─ INFORMAÇÕES DO DISPOSITIVO ─ -->
+  <section class="card col-6" id="deviceCard">
+    <div class="card-title">
+      <span>Informações do Dispositivo</span>
+      <button class="btn btn-ghost btn-sm" onclick="solicitarLocalizacao()">📍 Localização</button>
+    </div>
+    <div class="device-info-grid" id="deviceInfoGrid">
+      <div class="device-info-item">
+        <div class="di-icon">💻</div>
+        <div class="di-label">Sistema</div>
+        <div class="di-value" id="diOS">—</div>
+      </div>
+      <div class="device-info-item">
+        <div class="di-icon">🌐</div>
+        <div class="di-label">Navegador</div>
+        <div class="di-value" id="diBrowser">—</div>
+      </div>
+      <div class="device-info-item">
+        <div class="di-icon">📱</div>
+        <div class="di-label">Tipo</div>
+        <div class="di-value" id="diDevice">—</div>
+      </div>
+      <div class="device-info-item">
+        <div class="di-icon">🕐</div>
+        <div class="di-label">Fuso Horário</div>
+        <div class="di-value" id="diTimezone">—</div>
+      </div>
+      <div class="device-info-item">
+        <div class="di-icon">🌍</div>
+        <div class="di-label">Idioma</div>
+        <div class="di-value" id="diLanguage">—</div>
+      </div>
+      <div class="device-info-item">
+        <div class="di-icon">🔋</div>
+        <div class="di-label">Bateria</div>
+        <div class="di-value" id="diBattery">—</div>
+      </div>
+    </div>
+    <div class="device-info-item" style="margin-bottom:12px;">
+      <div class="di-label">📍 Localização</div>
+      <div class="di-value" id="diLocation">Clique em "Localização" para obter</div>
+    </div>
+    <div class="location-map" id="locationMap">
+      <div class="location-placeholder">
+        <div style="font-size:2rem;margin-bottom:8px;">🗺️</div>
+        <div style="font-size:0.85rem;">Localização não disponível</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─ QUESTIONÁRIOS ─ -->
+  <section class="card col-12">
+    <div class="card-title">
+      <span>Questionários Financeiros do Dia</span>
+      <span id="quizProgress" style="font-size:0.78rem;color:var(--gray);">0/5 completos</span>
+    </div>
+    <p style="color:var(--gray);font-size:0.85rem;margin-bottom:20px;">Complete os questionários para aprender e registar atividade.</p>
+    <div id="quizContainer"></div>
+  </section>
+
+  <!-- ─ PLANOS ─ -->
+  <section class="card col-12">
+    <div class="card-title">Planos de Investimento</div>
+    <div class="plans-grid" id="planosCards"></div>
+  </section>
+
+  <!-- ─ HISTÓRICO ─ -->
+  <section class="card col-12">
+    <div class="card-title">
+      <span>Histórico de Transações</span>
+      <span id="historicoBadge" style="font-size:0.78rem;color:var(--gray);">0 registros</span>
+    </div>
+    <div id="historicoLista">
+      <div style="text-align:center;padding:30px;color:var(--gray);">Nenhuma transação ainda</div>
+    </div>
+  </section>
+
+  <!-- ─ TAREFAS USUÁRIO ─ -->
+  <section class="card col-12" id="tarefasCard">
+    <div class="card-title">Minhas Tarefas Completas</div>
+    <div id="listaTarefasUsuario"></div>
+  </section>
+
+  <!-- ─ ADMIN PANEL ─ -->
+  <section id="adminPanel" class="card col-12" style="display:none;">
+    <div class="card-title" style="font-size:1rem;font-family:'Syne',sans-serif;color:var(--gold);">⚡ Painel Administrativo</div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Configurações</div>
+      <div class="admin-grid">
+        <div class="admin-widget">
+          <h3>Planos de Investimento</h3>
+          <button class="btn btn-gold btn-full" onclick="abrirModal('configModal')">✏️ Editar Planos</button>
+        </div>
+        <div class="admin-widget">
+          <h3>Atualizar Saldo</h3>
+          <div class="input-group" style="margin-bottom:12px;">
+            <label>Telefone</label>
+            <input type="tel" id="adminUserPhone" placeholder="+244...">
+          </div>
+          <div class="input-group" style="margin-bottom:12px;">
+            <label>Novo Saldo (Kz)</label>
+            <input type="number" id="adminNewSaldo" step="0.01">
+          </div>
+          <button class="btn btn-success btn-full" onclick="atualizarSaldoUsuario()">✅ Atualizar</button>
+        </div>
+        <div class="admin-widget">
+          <h3>Registrar Ganho</h3>
+          <div class="input-group" style="margin-bottom:12px;">
+            <label>Telefone</label>
+            <input type="tel" id="adminGanhoPhone" placeholder="+244...">
+          </div>
+          <div class="input-group" style="margin-bottom:12px;">
+            <label>Valor do Ganho (Kz)</label>
+            <input type="number" id="adminGanhoValor" step="0.01">
+          </div>
+          <button class="btn btn-gold btn-full" onclick="registrarGanho()">💰 Registrar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Usuários Registrados (<span id="totalUsersCount">0</span>)</div>
+      <div id="usersList" style="max-height:450px;overflow-y:auto;"></div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Atividades Recentes</div>
+      <div id="activityLog" style="max-height:300px;overflow-y:auto;"></div>
+    </div>
+
+    <div class="admin-section">
+      <div class="admin-section-title">Tarefas por Usuário</div>
+      <div id="adminTasksList" style="max-height:400px;overflow-y:auto;"></div>
+    </div>
+  </section>
+
+</main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// CONFIGURAÇÃO
+// ═══════════════════════════════════════════════════════
+const CONFIG = {
+  API_URL:        'https://rumply-sinistrorse-camden.ngrok-free.dev/api',
+  ADMIN_EMAIL:    'edmilsonxade075@gmail.com',
+  WHATSAPP:       '244921402002',
+  META_MENSAL:    100000,
+  SESSION_MINUTES: 60,
+  // NOTA: A senha do admin NUNCA deve ficar no frontend em produção.
+  // Validação deve ser feita exclusivamente no servidor.
+};
+
+// ═══════════════════════════════════════════════════════
+// ESTADO GLOBAL
+// ═══════════════════════════════════════════════════════
+let state = {
+  usuario:        null,
+  isAdmin:        false,
+  usuarios:       [],
+  atividades:     JSON.parse(sessionStorage.getItem('atividades') || '[]'),
+  usuarioEditando: null,
+  authToken:      sessionStorage.getItem('authToken') || null,
+  taxasCambio:    {},
+  chartInstance:  null,
+  sessionTimer:   null,
+  sessionEnd:     null,
+  deviceInfo:     {},
+};
+
+// ═══════════════════════════════════════════════════════
+// PLANOS (somente localStorage, não-crítico)
+// ═══════════════════════════════════════════════════════
+let PLANOS = JSON.parse(localStorage.getItem('planos_investimento')) || [
+  { nivel:1, valor:18000,  ganhoDiario:466.67,  ganhoMensal:14000,    taxa:77.78 },
+  { nivel:2, valor:35000,  ganhoDiario:907.41,  ganhoMensal:27222.22, taxa:77.78 },
+  { nivel:3, valor:75000,  ganhoDiario:1944.44, ganhoMensal:58333.33, taxa:77.78, popular:true },
+  { nivel:4, valor:105000, ganhoDiario:2722.22, ganhoMensal:81666.67, taxa:77.78 },
+];
+
+// ═══════════════════════════════════════════════════════
+// QUIZ BANCO
+// ═══════════════════════════════════════════════════════
+const BANCO_QUIZZES = [
+  { id:1,  pergunta:"Qual a principal vantagem de diversificar investimentos?", opcoes:["Aumentar lucros rapidamente","Reduzir riscos","Evitar impostos","Facilitar saques"], correta:1 },
+  { id:2,  pergunta:"O que significa ROI?", opcoes:["Risco de Investimento","Retorno sobre Investimento","Regra de Investimento","Reserva Operacional"], correta:1 },
+  { id:3,  pergunta:"Qual o prazo ideal para investimentos de longo prazo?", opcoes:["1 mês","6 meses","Acima de 5 anos","1 ano"], correta:2 },
+  { id:4,  pergunta:"O que é liquidez em investimentos?", opcoes:["Converter em dinheiro rapidamente","Lucro garantido","Taxa de juros fixa","Proteção contra inflação"], correta:0 },
+  { id:5,  pergunta:"Por que ter uma reserva de emergência?", opcoes:["Aumentar investimentos","Cobrir despesas imprevistas","Pagar menos impostos","Ganhar mais juros"], correta:1 },
+  { id:6,  pergunta:"O que são ações?", opcoes:["Empréstimos ao governo","Parcelas de propriedade de empresa","Títulos de dívida","Moedas digitais"], correta:1 },
+  { id:7,  pergunta:"Objetivo de um fundo de investimento?", opcoes:["Garantir lucro imediato","Reunir capital para investir em ativos","Oferecer empréstimos","Evitar impostos"], correta:1 },
+  { id:8,  pergunta:"Renda fixa se caracteriza por:", opcoes:["Rendimentos variáveis","Rendimentos previsíveis","Alto risco","Sem garantias"], correta:1 },
+  { id:9,  pergunta:"Risco de investir em apenas um tipo de ativo?", opcoes:["Perder tudo se desvalorizar","Ganhar muito","Pagar mais impostos","Ter mais trabalho"], correta:0 },
+  { id:10, pergunta:"O que é inflação?", opcoes:["Aumento geral dos preços","Diminuição de preços","Estabilidade econômica","Taxa de juros"], correta:0 },
+  { id:11, pergunta:"Diferença entre renda ativa e passiva?", opcoes:["Não há diferença","Ativa exige trabalho contínuo","Passiva é ilegal","Ativa é sempre melhor"], correta:1 },
+  { id:12, pergunta:"O que são dividendos?", opcoes:["Taxas de administração","Parte do lucro aos acionistas","Impostos","Taxas bancárias"], correta:1 },
+  { id:13, pergunta:"Importância do planejamento financeiro?", opcoes:["Não é importante","Atingir objetivos financeiros","Só serve para ricos","Complica a vida"], correta:1 },
+  { id:14, pergunta:"O que é rentabilidade?", opcoes:["Perda de capital","Ganho sobre investimento","Taxa de administração","Imposto"], correta:1 },
+  { id:15, pergunta:"Melhor momento para começar a investir?", opcoes:["Quando for rico","Depois de aposentado","O mais cedo possível","Nunca"], correta:2 },
+  { id:16, pergunta:"O que são juros compostos?", opcoes:["Juros só sobre o valor inicial","Juros sobre juros acumulados","Taxa fixa","Penalidade"], correta:1 },
+  { id:17, pergunta:"Principal objetivo de investir?", opcoes:["Gastar todo o dinheiro","Fazer o dinheiro crescer","Pagar dívidas","Comprar luxos"], correta:1 },
+  { id:18, pergunta:"O que é volatilidade no mercado financeiro?", opcoes:["Estabilidade de preços","Variação de preços","Falta de liquidez","Ausência de riscos"], correta:1 },
+  { id:19, pergunta:"Função de uma corretora?", opcoes:["Guardar dinheiro","Intermediar compra e venda de ativos","Emprestar dinheiro","Cobrar impostos"], correta:1 },
+  { id:20, pergunta:"O que significa 'investidor conservador'?", opcoes:["Alta tolerância ao risco","Baixa tolerância ao risco","Não investe","Só investe em cripto"], correta:1 },
+  { id:21, pergunta:"Vantagem de investimentos de longo prazo?", opcoes:["Ganhos rápidos","Aproveitar juros compostos","Liquidez imediata","Sem riscos"], correta:1 },
+  { id:22, pergunta:"O que é patrimônio líquido?", opcoes:["Total de dívidas","Diferença entre ativos e passivos","Saldo bancário","Renda mensal"], correta:1 },
+  { id:23, pergunta:"Por que estudar antes de investir?", opcoes:["Não é importante","Reduzir riscos e decidir com informação","Perder tempo","Complicar as coisas"], correta:1 },
+  { id:24, pergunta:"O que são títulos públicos?", opcoes:["Ações de empresas","Empréstimos ao governo","Moedas estrangeiras","Imóveis"], correta:1 },
+  { id:25, pergunta:"Risco de investir sem conhecimento?", opcoes:["Nenhum risco","Perder dinheiro","Ganhar muito","Ficar rico"], correta:1 },
+  { id:26, pergunta:"O que é 'carteira de investimentos'?", opcoes:["Local físico para dinheiro","Conjunto de investimentos","Tipo de banco","Aplicativo financeiro"], correta:1 },
+  { id:27, pergunta:"Diferença entre poupar e investir?", opcoes:["Não há diferença","Poupar é guardar, investir é crescer","Investir é mais arriscado","Poupar rende mais"], correta:1 },
+  { id:28, pergunta:"O que é alavancagem financeira?", opcoes:["Economizar dinheiro","Usar capital de terceiros para investir","Guardar em casa","Não investir"], correta:1 },
+  { id:29, pergunta:"Impacto da taxa Selic nos investimentos?", opcoes:["Nenhum impacto","Influencia rendimentos de renda fixa","Só afeta ações","Define preço de imóveis"], correta:1 },
+  { id:30, pergunta:"O que é educação financeira?", opcoes:["Curso universitário","Conhecimento para gerir dinheiro","Não é necessária","Só para economistas"], correta:1 },
+];
+
+function obterQuizzesDoDia() {
+  const hoje = new Date();
+  const seed = Math.floor((hoje - new Date(hoje.getFullYear(), 0, 0)) / 86400000);
+  const resultado = [];
+  for (let i = 0; i < 5; i++) {
+    resultado.push(BANCO_QUIZZES[(seed + i * 6) % BANCO_QUIZZES.length]);
+  }
+  return resultado;
+}
+
+// ═══════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════
+function toast(mensagem, tipo = 'info', duracao = 4000) {
+  const icons = { success:'✅', danger:'❌', warning:'⚠️', info:'ℹ️' };
+  const el = document.createElement('div');
+  el.className = `toast ${tipo}`;
+  el.innerHTML = `<span class="toast-icon">${icons[tipo]||'ℹ️'}</span><span>${mensagem}</span>`;
+  document.getElementById('toastContainer').appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'toastOut 0.3s ease forwards';
+    setTimeout(() => el.remove(), 300);
+  }, duracao);
+}
+
+// ═══════════════════════════════════════════════════════
+// SPINNER
+// ═══════════════════════════════════════════════════════
+function showSpinner(texto = 'Carregando...') {
+  document.getElementById('spinnerText').textContent = texto;
+  document.getElementById('spinnerOverlay').classList.add('active');
+}
+
+function hideSpinner() {
+  document.getElementById('spinnerOverlay').classList.remove('active');
+}
+
+// ═══════════════════════════════════════════════════════
+// VALIDAÇÃO DE INPUTS
+// ═══════════════════════════════════════════════════════
+function mostrarErro(id, msg) {
+  const el = document.getElementById(id);
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+function limparErros(...ids) {
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = ''; el.style.display = 'none'; }
+  });
+}
+
+function validarEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validarTelefone(tel) {
+  return /^\+?\d{7,15}$/.test(tel.replace(/\s/g, ''));
+}
+
+function checarForcaSenha(senha) {
+  const bar = document.getElementById('psBar');
+  const txt = document.getElementById('psText');
+  if (!bar || !txt) return;
+  let score = 0;
+  if (senha.length >= 8)       score++;
+  if (/[A-Z]/.test(senha))     score++;
+  if (/[0-9]/.test(senha))     score++;
+  if (/[^a-zA-Z0-9]/.test(senha)) score++;
+  const niveis = [
+    { pct:'25%', color:'var(--danger)',  label:'Fraca' },
+    { pct:'50%', color:'var(--warning)', label:'Razoável' },
+    { pct:'75%', color:'var(--info)',    label:'Boa' },
+    { pct:'100%',color:'var(--success)', label:'Forte' },
+  ];
+  const n = niveis[Math.min(score, 3)];
+  bar.style.width = n.pct;
+  bar.style.background = n.color;
+  txt.style.color = n.color;
+  txt.textContent = senha.length > 0 ? `Senha ${n.label}` : '';
+}
+
+// ═══════════════════════════════════════════════════════
+// AUTH FORMS
+// ═══════════════════════════════════════════════════════
+function mostrarLogin()      { toggle('loginForm', true);  toggle('registroForm', false); toggle('recuperacaoForm', false); }
+function mostrarRegistro()   { toggle('loginForm', false); toggle('registroForm', true);  toggle('recuperacaoForm', false); }
+function mostrarRecuperacao(){ toggle('loginForm', false); toggle('registroForm', false); toggle('recuperacaoForm', true); }
+
+function toggle(id, show) {
+  const el = document.getElementById(id);
+  if (show) el.classList.add('active'); else el.classList.remove('active');
+}
+
+// ═══════════════════════════════════════════════════════
+// LOGIN
+// ═══════════════════════════════════════════════════════
+async function fazerLogin(e) {
+  e.preventDefault();
+  limparErros('errLoginEmail','errLoginSenha');
+
+  const email = document.getElementById('loginEmail').value.trim();
+  const senha = document.getElementById('loginSenha').value;
+
+  if (!validarEmail(email)) { mostrarErro('errLoginEmail','Email inválido'); return; }
+  if (!senha)               { mostrarErro('errLoginSenha','Digite a senha'); return; }
+
+  // Admin: verificado no servidor. Por segurança, apenas tentamos a API.
+  const btn = document.getElementById('btnLogin');
+  btn.textContent = 'Entrando...';
+  btn.disabled = true;
+  showSpinner('Autenticando...');
+
+  // Verificação local do admin (fallback quando servidor indisponível)
+  // Em produção REMOVA esta verificação e deixe somente a API fazer isso.
+  if (email === CONFIG.ADMIN_EMAIL) {
+    try {
+      const res = await apiPost('/auth/login', { email, senha });
+      if (res.ok) {
+        const data = await res.json();
+        finalizarLoginAdmin(data);
+        return;
+      }
+    } catch (_) { /* servidor offline, fallback abaixo */ }
+
+    // fallback offline só para admin — REMOVA em produção
+    const ADMIN_PW = 'Elisonkiame1#'; // mover para variável de ambiente no servidor
+    if (senha === ADMIN_PW) {
+      state.usuario = { nome:'Administrador', email: CONFIG.ADMIN_EMAIL, telefone:'+244 921 402 002', saldo:0, ganhos:0, investimentos:[] };
+      state.isAdmin = true;
+      hideSpinner();
+      btn.textContent = 'Entrar'; btn.disabled = false;
+      mostrarDashboard();
+      toast('Login administrativo realizado!', 'success');
+      await carregarUsuariosDoServidor();
+      return;
+    } else {
+      hideSpinner();
+      btn.textContent = 'Entrar'; btn.disabled = false;
+      mostrarErro('errLoginSenha','Senha incorreta');
+      return;
+    }
+  }
+
+  try {
+    const res = await apiPost('/auth/login', { email, senha });
+    const data = await res.json();
+    if (res.ok) {
+      guardarToken(data.token);
+      state.usuario = data.usuario;
+      state.isAdmin = false;
+      mostrarDashboard();
+      toast(`Bem-vindo de volta, ${data.usuario.nome.split(' ')[0]}!`, 'success');
+      registrarAtividade(data.usuario.telefone, 'login', 'Login realizado');
+    } else {
+      mostrarErro('errLoginEmail', data.mensagem || 'Email ou senha incorretos');
+    }
+  } catch (err) {
+    toast('Erro ao conectar com o servidor', 'danger');
+  } finally {
+    hideSpinner();
+    btn.textContent = 'Entrar';
+    btn.disabled = false;
+  }
+}
+
+function finalizarLoginAdmin(data) {
+  guardarToken(data.token);
+  state.usuario = { nome:'Administrador', email: CONFIG.ADMIN_EMAIL, telefone:'+244 921 402 002', saldo:0, ganhos:0, investimentos:[] };
+  state.isAdmin = true;
+  hideSpinner();
+  mostrarDashboard();
+  toast('Login administrativo realizado!', 'success');
+  carregarUsuariosDoServidor();
+}
+
+// ═══════════════════════════════════════════════════════
+// REGISTRO
+// ═══════════════════════════════════════════════════════
+async function criarConta(e) {
+  e.preventDefault();
+  limparErros('errRegNome','errRegEmail','errRegTel','errRegSenha','errRegConfirma');
+
+  const nome     = document.getElementById('regNome').value.trim();
+  const email    = document.getElementById('regEmail').value.trim();
+  const telefone = document.getElementById('regTelefone').value.trim();
+  const senha    = document.getElementById('regSenha').value;
+  const confirma = document.getElementById('regConfirma').value;
+
+  let ok = true;
+  if (nome.length < 3)           { mostrarErro('errRegNome','Nome muito curto'); ok=false; }
+  if (!validarEmail(email))      { mostrarErro('errRegEmail','Email inválido'); ok=false; }
+  if (!validarTelefone(telefone)){ mostrarErro('errRegTel','Telefone inválido (ex: +244921402002)'); ok=false; }
+  if (senha.length < 8)          { mostrarErro('errRegSenha','Mínimo 8 caracteres'); ok=false; }
+  if (senha !== confirma)        { mostrarErro('errRegConfirma','As senhas não coincidem'); ok=false; }
+  if (!ok) return;
+
+  const btn = document.getElementById('btnRegistro');
+  btn.textContent = 'Criando...'; btn.disabled = true;
+  showSpinner('Criando conta...');
+
+  try {
+    const res  = await apiPost('/auth/registro', { nome, email, telefone, senha });
+    const data = await res.json();
+    if (res.ok) {
+      guardarToken(data.token);
+      state.usuario = data.usuario;
+      state.isAdmin = false;
+      mostrarDashboard();
+      toast(`Conta criada! Bem-vindo, ${nome.split(' ')[0]}!`, 'success');
+      registrarAtividade(telefone, 'registro', 'Nova conta criada');
+    } else {
+      toast(data.mensagem || 'Erro ao criar conta', 'danger');
+    }
+  } catch (_) {
+    toast('Erro ao conectar com o servidor', 'danger');
+  } finally {
+    hideSpinner();
+    btn.textContent = 'Criar Conta'; btn.disabled = false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// RECUPERAÇÃO DE SENHA
+// ═══════════════════════════════════════════════════════
+function enviarRecuperacao(e) {
+  e.preventDefault();
+  const tel = document.getElementById('recTel').value.trim();
+  if (!validarTelefone(tel)) { toast('Telefone inválido', 'warning'); return; }
+
+  const msg = `Olá! Preciso recuperar a senha da minha conta Workhome.\n\nTelefone cadastrado: ${tel}`;
+  window.open(`https://wa.me/${CONFIG.WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+  toast('Redirecionado para o WhatsApp!', 'success');
+  mostrarLogin();
+}
+
+// ═══════════════════════════════════════════════════════
+// SESSION MANAGER
+// ═══════════════════════════════════════════════════════
+function guardarToken(token) {
+  if (token) {
+    state.authToken = token;
+    sessionStorage.setItem('authToken', token);
+  }
+  iniciarTimerSessao();
+}
+
+function iniciarTimerSessao() {
+  if (state.sessionTimer) clearInterval(state.sessionTimer);
+  state.sessionEnd = Date.now() + CONFIG.SESSION_MINUTES * 60 * 1000;
+
+  state.sessionTimer = setInterval(() => {
+    const restante = state.sessionEnd - Date.now();
+    const el = document.getElementById('sessionTimer');
+    const countdown = document.getElementById('sessionCountdown');
+
+    if (restante <= 0) {
+      clearInterval(state.sessionTimer);
+      fazerLogout(true);
+      return;
+    }
+
+    const min = Math.floor(restante / 60000);
+    const sec = Math.floor((restante % 60000) / 1000);
+
+    if (countdown) countdown.textContent = `Sessão: ${min}m ${sec}s`;
+
+    if (restante <= 5 * 60 * 1000) {
+      if (el) { el.style.display = 'block'; el.textContent = `⚠️ Sessão expira em ${min}m ${sec}s — Clique em qualquer lugar para renovar`; }
+    } else {
+      if (el) el.style.display = 'none';
+    }
+  }, 1000);
+
+  document.addEventListener('click', renovarSessao, { once: false });
+  document.addEventListener('keypress', renovarSessao, { once: false });
+}
+
+let ultimaRenovacao = 0;
+function renovarSessao() {
+  const agora = Date.now();
+  if (agora - ultimaRenovacao < 30000) return; // throttle 30s
+  ultimaRenovacao = agora;
+  if (!state.authToken) return;
+  state.sessionEnd = agora + CONFIG.SESSION_MINUTES * 60 * 1000;
+}
+
+function fazerLogout(automatico = false) {
+  if (!automatico && !confirm('Deseja realmente sair?')) return;
+
+  clearInterval(state.sessionTimer);
+  state.authToken = null;
+  state.usuario = null;
+  state.isAdmin = false;
+  sessionStorage.clear();
+
+  document.getElementById('sessionTimer').style.display = 'none';
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('dashboardScreen').style.display = 'none';
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginSenha').value = '';
+  mostrarLogin();
+
+  if (automatico) toast('Sessão expirada. Faça login novamente.', 'warning');
+}
+
+// ═══════════════════════════════════════════════════════
+// API HELPER
+// ═══════════════════════════════════════════════════════
+function apiPost(path, body) {
+  return fetch(`${CONFIG.API_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(state.authToken ? { 'Authorization': `Bearer ${state.authToken}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+function apiGet(path) {
+  return fetch(`${CONFIG.API_URL}${path}`, {
+    headers: { 'Authorization': `Bearer ${state.authToken}` },
+  });
+}
+
+function apiPut(path, body) {
+  return fetch(`${CONFIG.API_URL}${path}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${state.authToken}`,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+function mostrarDashboard() {
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('dashboardScreen').style.display = 'block';
+
+  const u = state.usuario;
+  document.getElementById('userName').textContent    = u.nome.split(' ')[0];
+  document.getElementById('userPhone').textContent   = u.telefone;
+  document.getElementById('userAvatar').textContent  = u.nome.charAt(0).toUpperCase();
+
+  if (state.isAdmin) {
+    document.getElementById('adminBadge').style.display  = 'inline-block';
+    document.getElementById('adminPanel').style.display  = 'block';
+    document.getElementById('bonusBannerCard').style.display = 'none';
+    document.getElementById('userTasksCard').style.display   = 'none';
+    document.getElementById('tarefasCard').style.display     = 'none';
+    document.getElementById('deviceCard').style.display      = 'block';
+    carregarPainelAdmin();
+  } else {
+    document.getElementById('adminBadge').style.display  = 'none';
+    document.getElementById('adminPanel').style.display  = 'none';
+    document.getElementById('bonusBannerCard').style.display = 'block';
+    document.getElementById('userTasksCard').style.display   = 'block';
+    document.getElementById('tarefasCard').style.display     = 'block';
+    document.getElementById('deviceCard').style.display      = 'block';
+  }
+
+  atualizarInterface();
+  carregarQuizzes();
+  carregarPlanosInvestimento();
+  inicializarGraficos();
+  carregarCambio();
+  coletarInfoDispositivo();
+}
+
+function atualizarInterface() {
+  const u = state.usuario;
+  if (!u) return;
+
+  document.getElementById('saldo').textContent = formatarMoeda(u.saldo || 0);
+
+  const pct = Math.min(((u.saldo || 0) / CONFIG.META_MENSAL) * 100, 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = pct.toFixed(1) + '%';
+
+  document.getElementById('ganhosHoje').textContent      = formatarMoeda(u.ganhos || 0);
+  document.getElementById('investimentosAtivos').textContent = u.investimentos?.length || 0;
+
+  const totalInv = (u.investimentos || []).reduce((a,i) => a + i.valor, 0);
+  const taxa     = totalInv > 0 ? (((u.ganhos || 0) / totalInv) * 100).toFixed(1) : '0.0';
+
+  document.getElementById('taxaRetorno').textContent   = taxa + '%';
+  document.getElementById('ganhosTotais').textContent  = formatarMoeda(u.ganhos || 0);
+  document.getElementById('totalInvestido').textContent = formatarMoeda(totalInv);
+  document.getElementById('rendimentoMedio').textContent = taxa + '%';
+  document.getElementById('quizzesTotal').textContent   = (u.quizzesCompletos || []).length;
+  document.getElementById('tarefasCompletas').textContent = (u.quizzesCompletos || []).length;
+  document.getElementById('saldoUpdatedAt').textContent = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
+
+  atualizarHistorico();
+  atualizarTarefasUsuario();
+}
+
+// ═══════════════════════════════════════════════════════
+// HISTÓRICO
+// ═══════════════════════════════════════════════════════
+function atualizarHistorico() {
+  const container = document.getElementById('historicoLista');
+  const badge     = document.getElementById('historicoBadge');
+  const invs      = state.usuario?.investimentos || [];
+
+  badge.textContent = `${invs.length} registros`;
+
+  if (invs.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:30px;color:var(--gray);">Nenhuma transação ainda</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  [...invs].reverse().forEach(inv => {
+    const div = document.createElement('div');
+    div.className = 'history-item';
+    div.innerHTML = `
+      <div class="hi-left">
+        <div class="hi-icon invest">💰</div>
+        <div>
+          <div class="hi-desc">${inv.descricao || 'Investimento'}</div>
+          <div class="hi-date">${new Date(inv.data).toLocaleDateString('pt-BR')}</div>
+        </div>
+      </div>
+      <div class="hi-amount negative">- ${formatarMoeda(inv.valor)}</div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// TAREFAS DO USUÁRIO
+// ═══════════════════════════════════════════════════════
+function atualizarTarefasUsuario() {
+  const lista     = document.getElementById('listaTarefasUsuario');
+  const completos = state.usuario?.quizzesCompletos || [];
+
+  if (completos.length === 0) {
+    lista.innerHTML = '<p style="color:var(--gray);font-size:0.88rem;padding:10px 0;">Nenhuma tarefa completada ainda.</p>';
+    return;
+  }
+
+  lista.innerHTML = '';
+  completos.forEach(qid => {
+    const q = BANCO_QUIZZES.find(x => x.id === qid);
+    if (!q) return;
+    const div = document.createElement('div');
+    div.style.cssText = 'padding:12px;background:var(--black-lighter);border-radius:10px;margin-bottom:8px;border-left:3px solid var(--success);display:flex;align-items:center;gap:10px;';
+    div.innerHTML = `<span style="font-size:1rem;">✅</span><span style="font-size:0.88rem;color:var(--gray-light);">${q.pergunta}</span>`;
+    lista.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// WHATSAPP
+// ═══════════════════════════════════════════════════════
+function abrirWhatsApp(tipo) {
+  const u = state.usuario;
+  const msg = tipo === 'deposito'
+    ? `Olá! Gostaria de fazer um depósito.\n\nNome: ${u.nome}\nTelefone: ${u.telefone}\nEmail: ${u.email}`
+    : `Olá! Gostaria de fazer uma retirada.\n\nNome: ${u.nome}\nTelefone: ${u.telefone}\nSaldo: ${formatarMoeda(u.saldo)}`;
+  window.open(`https://wa.me/${CONFIG.WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+  registrarAtividade(u.telefone, tipo, `Solicitação de ${tipo} via WhatsApp`);
+}
+
+function investir(valor, nivel, ganhoDiario) {
+  if (state.isAdmin) { toast('Administradores não podem investir', 'warning'); return; }
+  const u = state.usuario;
+  const msg = `Olá! Gostaria de realizar um investimento:\n\nNível: ${nivel}\nValor: ${formatarMoeda(valor)}\nGanho Diário: ${formatarMoeda(ganhoDiario)}\nGanho Mensal: ${formatarMoeda(ganhoDiario * 30)}\nDuração: 4 meses\n\nNome: ${u.nome}\nTelefone: ${u.telefone}`;
+  window.open(`https://wa.me/${CONFIG.WHATSAPP}?text=${encodeURIComponent(msg)}`, '_blank');
+  registrarAtividade(u.telefone, 'investimento', `Solicitação Nível ${nivel} - ${formatarMoeda(valor)}`);
+}
+
+// ═══════════════════════════════════════════════════════
+// PLANOS
+// ═══════════════════════════════════════════════════════
+function carregarPlanosInvestimento() {
+  const container = document.getElementById('planosCards');
+  container.innerHTML = '';
+  PLANOS.forEach(p => {
+    const div = document.createElement('div');
+    div.className = `plan-card${p.popular ? ' popular' : ''}`;
+    div.innerHTML = `
+      ${p.popular ? '<div class="popular-badge">Popular</div>' : ''}
+      <div class="plan-level">Nível ${p.nivel}</div>
+      <div class="plan-value">${formatarMoeda(p.valor)}</div>
+      <div class="plan-stats">
+        <div class="plan-stat"><span class="plan-stat-label">Ganho Diário</span><span class="plan-stat-value">${formatarMoeda(p.ganhoDiario)}</span></div>
+        <div class="plan-stat"><span class="plan-stat-label">Ganho Mensal</span><span class="plan-stat-value">${formatarMoeda(p.ganhoMensal)}</span></div>
+        <div class="plan-stat"><span class="plan-stat-label">Taxa</span><span class="plan-stat-value">+${p.taxa.toFixed(2)}%</span></div>
+        <div class="plan-stat"><span class="plan-stat-label">Duração</span><span class="plan-stat-value" style="color:var(--white);">4 meses</span></div>
+      </div>
+      <button class="btn btn-gold btn-full" onclick="investir(${p.valor},${p.nivel},${p.ganhoDiario})">Investir Agora</button>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// QUIZZES
+// ═══════════════════════════════════════════════════════
+function carregarQuizzes() {
+  if (state.isAdmin) return;
+  const container  = document.getElementById('quizContainer');
+  const progressEl = document.getElementById('quizProgress');
+  const quizzes    = obterQuizzesDoDia();
+  const completos  = state.usuario?.quizzesCompletos || [];
+  const count      = quizzes.filter(q => completos.includes(q.id)).length;
+
+  progressEl.textContent = `${count}/5 completos`;
+  container.innerHTML = '';
+
+  quizzes.forEach(quiz => {
+    const jaFeito = completos.includes(quiz.id);
+    const div = document.createElement('div');
+    div.className = `quiz-item${jaFeito ? ' done' : ''}`;
+    div.dataset.id = quiz.id;
+    div.innerHTML = `
+      <div class="quiz-question">${quiz.pergunta}</div>
+      ${jaFeito ? '<div class="quiz-done-badge">✅ Completo</div>' : ''}
+      <div class="quiz-options">
+        ${quiz.opcoes.map((op, i) => `
+          <button class="quiz-option" ${jaFeito ? 'disabled style="opacity:0.5;cursor:not-allowed;"' : ''} 
+            onclick="responderQuiz(${quiz.id}, ${i}, this)">${op}</button>
+        `).join('')}
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+async function responderQuiz(quizId, idx, btn) {
+  const quiz = BANCO_QUIZZES.find(q => q.id === quizId);
+  if (!quiz) return;
+
+  const opcoes = btn.closest('.quiz-options').querySelectorAll('.quiz-option');
+  opcoes.forEach(o => { o.disabled = true; o.classList.remove('selected'); });
+  btn.classList.add('selected');
+
+  await new Promise(r => setTimeout(r, 400));
+
+  if (idx === quiz.correta) {
+    btn.classList.remove('selected');
+    btn.classList.add('correct');
+    toast('Resposta correta! 🎉', 'success');
+
+    if (!state.usuario.quizzesCompletos) state.usuario.quizzesCompletos = [];
+    if (!state.usuario.quizzesCompletos.includes(quizId)) {
+      state.usuario.quizzesCompletos.push(quizId);
+      try {
+        await apiPost('/usuario/quiz', { quizId });
+      } catch (_) { /* offline */ }
+      registrarAtividade(state.usuario.telefone, 'quiz', `Quiz "${quiz.pergunta.substring(0,30)}..." completo`);
+    }
+    carregarQuizzes();
+    atualizarInterface();
+  } else {
+    btn.classList.remove('selected');
+    btn.classList.add('wrong');
+    opcoes[quiz.correta].classList.add('correct');
+    toast('Incorreto. A resposta correta está destacada.', 'danger');
+    setTimeout(() => {
+      btn.classList.remove('wrong');
+      opcoes[quiz.correta].classList.remove('correct');
+      opcoes.forEach(o => { o.disabled = false; });
+    }, 2500);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// CÂMBIO
+// ═══════════════════════════════════════════════════════
+async function carregarCambio() {
+  try {
+    const res  = await fetch('https://open.er-api.com/v6/latest/USD');
+    const data = await res.json();
+    state.taxasCambio = data.rates;
+
+    const aoa = data.rates.AOA;
+    if (aoa) {
+      document.getElementById('taxaUsdKz').textContent = aoa.toFixed(2);
+      document.getElementById('cambioUpdated').textContent = 'Atualizado agora';
+
+      const pares = { EUR:'rateEUR', BRL:'rateBRL', ZAR:'rateZAR', GBP:'rateGBP' };
+      for (const [cur, id] of Object.entries(pares)) {
+        const el = document.getElementById(id);
+        if (el && data.rates[cur]) {
+          el.textContent = (aoa / data.rates[cur]).toFixed(2) + ' Kz';
+        }
+      }
+    }
+  } catch (_) {
+    document.getElementById('cambioUpdated').textContent = 'Erro ao carregar';
+  }
+}
+
+function converterParaKz() {
+  const moeda = document.getElementById('moedaOrigem').value;
+  const valor = parseFloat(document.getElementById('valorConverter').value);
+  const res   = document.getElementById('resultadoConversao');
+
+  if (!valor || valor <= 0 || !state.taxasCambio.AOA || !state.taxasCambio[moeda]) {
+    res.textContent = '0,00 Kz';
+    return;
+  }
+
+  const kz = (valor / state.taxasCambio[moeda]) * state.taxasCambio.AOA;
+  res.textContent = formatarMoeda(kz);
+}
+
+setInterval(carregarCambio, 600000);
+
+// ═══════════════════════════════════════════════════════
+// DISPOSITIVO
+// ═══════════════════════════════════════════════════════
+function coletarInfoDispositivo() {
+  const ua  = navigator.userAgent;
+  const info = {};
+
+  // OS
+  if      (/Android/i.test(ua))     info.os = 'Android';
+  else if (/iPhone|iPad/i.test(ua)) info.os = 'iOS';
+  else if (/Windows/i.test(ua))     info.os = 'Windows';
+  else if (/Mac/i.test(ua))         info.os = 'macOS';
+  else if (/Linux/i.test(ua))       info.os = 'Linux';
+  else                              info.os = 'Desconhecido';
+
+  // Navegador
+  if      (/Chrome/i.test(ua) && !/Edge/i.test(ua)) info.browser = 'Chrome';
+  else if (/Safari/i.test(ua) && !/Chrome/i.test(ua)) info.browser = 'Safari';
+  else if (/Firefox/i.test(ua))    info.browser = 'Firefox';
+  else if (/Edge/i.test(ua))       info.browser = 'Edge';
+  else if (/Opera/i.test(ua))      info.browser = 'Opera';
+  else                             info.browser = 'Outro';
+
+  // Tipo
+  info.device = /Mobile|Android|iPhone|iPad/i.test(ua) ? '📱 Mobile' : '💻 Desktop';
+  info.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  info.language = navigator.language || navigator.userLanguage;
+
+  state.deviceInfo = info;
+
+  setVal('diOS',       info.os);
+  setVal('diBrowser',  info.browser);
+  setVal('diDevice',   info.device);
+  setVal('diTimezone', info.timezone);
+  setVal('diLanguage', info.language);
+
+  // Bateria
+  if (navigator.getBattery) {
+    navigator.getBattery().then(bat => {
+      const pct  = Math.round(bat.level * 100);
+      const icon = bat.charging ? '⚡' : (pct > 20 ? '🔋' : '🪫');
+      const status = bat.charging ? ' (Carregando)' : '';
+      setVal('diBattery', `${icon} ${pct}%${status}`);
+      state.deviceInfo.battery = `${pct}%${status}`;
+
+      bat.addEventListener('chargingchange', () => {
+        const p2   = Math.round(bat.level * 100);
+        const icon2 = bat.charging ? '⚡' : (p2 > 20 ? '🔋' : '🪫');
+        setVal('diBattery', `${icon2} ${p2}%${bat.charging ? ' (Carregando)' : ''}`);
+      });
+    });
+  } else {
+    setVal('diBattery', 'N/A');
+  }
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function solicitarLocalizacao() {
+  if (!navigator.geolocation) {
+    toast('Geolocalização não suportada neste dispositivo', 'warning');
+    return;
+  }
+
+  toast('Solicitando localização...', 'info');
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
+      state.deviceInfo.lat = lat;
+      state.deviceInfo.lng = lng;
+
+      setVal('diLocation', `${lat.toFixed(5)}, ${lng.toFixed(5)} (±${Math.round(accuracy)}m)`);
+
+      // Mapa via OpenStreetMap embed
+      const mapDiv = document.getElementById('locationMap');
+      mapDiv.innerHTML = `
+        <iframe
+          src="https://www.openstreetmap.org/export/embed.html?bbox=${lng-0.01},${lat-0.01},${lng+0.01},${lat+0.01}&layer=mapnik&marker=${lat},${lng}"
+          allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade">
+        </iframe>`;
+
+      // Geocodificação reversa (nome da cidade)
+      fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
+        .then(r => r.json())
+        .then(d => {
+          const cidade = d.address?.city || d.address?.town || d.address?.village || '';
+          const pais   = d.address?.country || '';
+          if (cidade || pais) setVal('diLocation', `${cidade}, ${pais} (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+          state.deviceInfo.cidade = cidade;
+          state.deviceInfo.pais   = pais;
+
+          // Salvar info no admin
+          registrarAtividade(state.usuario.telefone, 'location',
+            `Localização: ${cidade}, ${pais}`);
+        })
+        .catch(() => {});
+
+      toast('Localização obtida com sucesso!', 'success');
+    },
+    err => {
+      const msgs = { 1:'Permissão negada', 2:'Posição indisponível', 3:'Tempo esgotado' };
+      toast(`Localização: ${msgs[err.code] || 'Erro desconhecido'}`, 'danger');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
+}
+
+// ═══════════════════════════════════════════════════════
+// PERFIL
+// ═══════════════════════════════════════════════════════
+function abrirPerfil() {
+  const u = state.usuario;
+  document.getElementById('perfilNome').value     = u.nome;
+  document.getElementById('perfilEmail').value    = u.email;
+  document.getElementById('perfilTelefone').value = u.telefone;
+  document.getElementById('perfilSenha').value    = '';
+  document.getElementById('perfilAvatarGrande').textContent = u.nome.charAt(0).toUpperCase();
+  abrirModal('perfilModal');
+}
+
+async function salvarPerfil() {
+  const nome  = document.getElementById('perfilNome').value.trim();
+  const email = document.getElementById('perfilEmail').value.trim();
+  const senha = document.getElementById('perfilSenha').value;
+
+  if (!nome || !validarEmail(email)) { toast('Dados inválidos', 'warning'); return; }
+  if (senha && senha.length < 8) { toast('Nova senha deve ter mínimo 8 caracteres', 'warning'); return; }
+
+  showSpinner('Salvando perfil...');
+  try {
+    const body = { nome, email, ...(senha ? { senha } : {}) };
+    const res  = await apiPut(`/usuario/perfil`, body);
+    if (res.ok) {
+      state.usuario.nome  = nome;
+      state.usuario.email = email;
+      document.getElementById('userName').textContent   = nome.split(' ')[0];
+      document.getElementById('userAvatar').textContent = nome.charAt(0).toUpperCase();
+      fecharModal('perfilModal');
+      toast('Perfil atualizado!', 'success');
+    } else {
+      toast('Erro ao salvar perfil', 'danger');
+    }
+  } catch (_) {
+    // Offline update
+    state.usuario.nome  = nome;
+    state.usuario.email = email;
+    document.getElementById('userName').textContent   = nome.split(' ')[0];
+    document.getElementById('userAvatar').textContent = nome.charAt(0).toUpperCase();
+    fecharModal('perfilModal');
+    toast('Perfil atualizado localmente!', 'success');
+  } finally {
+    hideSpinner();
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// GRÁFICOS
+// ═══════════════════════════════════════════════════════
+function inicializarGraficos() { atualizarGrafico(); }
+
+function atualizarGrafico() {
+  const periodo = document.getElementById('chartPeriod')?.value || '6m';
+  const ctx     = document.getElementById('saldoChart');
+  if (!ctx) return;
+
+  if (state.chartInstance) state.chartInstance.destroy();
+
+  const datasets = {
+    '6m': { labels:['Ago','Set','Out','Nov','Dez','Jan'], data:[0, 8000, 18000, 30000, 55000, state.usuario.saldo] },
+    '3m': { labels:['Nov','Dez','Jan'], data:[0, 30000, state.usuario.saldo] },
+    '1m': { labels:['Sem 1','Sem 2','Sem 3','Sem 4'], data:[0, state.usuario.saldo*0.2, state.usuario.saldo*0.6, state.usuario.saldo] },
+  };
+
+  const { labels, data } = datasets[periodo];
+
+  state.chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Saldo (Kz)',
+        data,
+        borderColor: '#FFD700',
+        backgroundColor: (ctx2) => {
+          const gradient = ctx2.chart.ctx.createLinearGradient(0, 0, 0, 240);
+          gradient.addColorStop(0, 'rgba(255,215,0,0.15)');
+          gradient.addColorStop(1, 'rgba(255,215,0,0)');
+          return gradient;
+        },
+        tension: 0.4,
+        fill: true,
+        borderWidth: 2.5,
+        pointBackgroundColor: '#FFD700',
+        pointRadius: 4,
+        pointHoverRadius: 7,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { intersect: false, mode: 'index' },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1C1C1C',
+          titleColor: '#888',
+          bodyColor: '#FFD700',
+          borderColor: 'rgba(255,215,0,0.2)',
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            label: ctx3 => ' ' + formatarMoeda(ctx3.parsed.y),
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#666',
+            callback: v => {
+              if (v >= 1000) return (v/1000).toFixed(0) + 'k Kz';
+              return v + ' Kz';
+            }
+          },
+          border: { color: 'transparent' }
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: '#666' },
+          border: { color: 'transparent' }
+        }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// PAINEL ADMIN
+// ═══════════════════════════════════════════════════════
+async function carregarUsuariosDoServidor() {
+  try {
+    const res = await apiGet('/admin/usuarios');
+    if (res.ok) {
+      const data = await res.json();
+      state.usuarios = data.usuarios;
+      carregarPainelAdmin();
+    }
+  } catch (_) {}
+}
+
+function carregarPainelAdmin() {
+  if (!state.isAdmin) return;
+
+  const lista = document.getElementById('usersList');
+  const count = document.getElementById('totalUsersCount');
+  count.textContent = state.usuarios.length;
+  lista.innerHTML = '';
+
+  if (state.usuarios.length === 0) {
+    lista.innerHTML = '<p style="color:var(--gray);text-align:center;padding:20px;">Nenhum usuário registrado.</p>';
+  } else {
+    state.usuarios.forEach(u => {
+      const card = document.createElement('div');
+      card.className = 'user-card';
+      card.innerHTML = `
+        <div class="user-card-header">
+          <div>
+            <div class="user-card-name">${u.nome}</div>
+            <div class="user-card-sub">${u.telefone} | ${u.email}</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="editarUsuario('${u.telefone}')">✏️ Editar</button>
+        </div>
+        <div class="user-card-stats">
+          <div class="ucs"><div class="ucs-label">Saldo</div><div class="ucs-value">${formatarMoeda(u.saldo||0).replace(' Kz','')}</div></div>
+          <div class="ucs"><div class="ucs-label">Ganhos</div><div class="ucs-value">${formatarMoeda(u.ganhos||0).replace(' Kz','')}</div></div>
+          <div class="ucs"><div class="ucs-label">Quizzes</div><div class="ucs-value">${(u.quizzesCompletos||[]).length}</div></div>
+        </div>
+        ${u.deviceInfo ? `
+        <div style="margin-top:8px;display:flex;flex-wrap:wrap;">
+          ${u.deviceInfo.os ? `<span class="device-chip">💻 ${u.deviceInfo.os}</span>` : ''}
+          ${u.deviceInfo.browser ? `<span class="device-chip">🌐 ${u.deviceInfo.browser}</span>` : ''}
+          ${u.deviceInfo.cidade ? `<span class="device-chip">📍 ${u.deviceInfo.cidade}, ${u.deviceInfo.pais}</span>` : ''}
+          ${u.deviceInfo.battery ? `<span class="device-chip">🔋 ${u.deviceInfo.battery}</span>` : ''}
+        </div>` : ''}
+      `;
+      lista.appendChild(card);
+    });
+  }
+
+  // Atividades
+  const actEl = document.getElementById('activityLog');
+  actEl.innerHTML = '';
+  if (state.atividades.length === 0) {
+    actEl.innerHTML = '<p style="color:var(--gray);text-align:center;padding:20px;">Nenhuma atividade.</p>';
+  } else {
+    [...state.atividades].reverse().slice(0, 30).forEach(a => {
+      const div = document.createElement('div');
+      div.className = 'activity-item';
+      div.innerHTML = `
+        <div class="ai-left">
+          <div class="ai-phone">${a.telefone}</div>
+          <div class="ai-desc">${a.descricao}</div>
+        </div>
+        <div class="ai-date">${new Date(a.data).toLocaleString('pt-BR')}</div>
+      `;
+      actEl.appendChild(div);
+    });
+  }
+
+  // Tarefas por usuário
+  const taskEl = document.getElementById('adminTasksList');
+  taskEl.innerHTML = '';
+  if (state.usuarios.length === 0) {
+    taskEl.innerHTML = '<p style="color:var(--gray);text-align:center;padding:20px;">Nenhum usuário.</p>';
+  } else {
+    state.usuarios.forEach(u => {
+      const completos = u.quizzesCompletos || [];
+      const div = document.createElement('div');
+      div.className = 'user-card';
+      div.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div>
+            <div class="user-card-name">${u.nome}</div>
+            <div class="user-card-sub">${u.telefone}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:var(--gold);">${completos.length}</div>
+            <div style="font-size:0.72rem;color:var(--gray);">tarefas</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;max-height:140px;overflow-y:auto;">
+          ${completos.length === 0
+            ? '<span style="color:var(--gray);font-size:0.82rem;">Nenhuma tarefa.</span>'
+            : completos.map(qid => {
+                const q = BANCO_QUIZZES.find(x => x.id === qid);
+                return q ? `<div style="padding:8px 10px;background:var(--black-card);border-radius:8px;border-left:2px solid var(--success);font-size:0.82rem;color:var(--gray-light);">✅ ${q.pergunta}</div>` : '';
+              }).join('')}
+        </div>
+      `;
+      taskEl.appendChild(div);
+    });
+  }
+}
+
+function editarUsuario(tel) {
+  const u = state.usuarios.find(x => x.telefone === tel);
+  if (!u) return;
+  state.usuarioEditando = u;
+  document.getElementById('editUserName').value  = u.nome;
+  document.getElementById('editUserEmail').value = u.email;
+  document.getElementById('editUserPhone').value = u.telefone;
+  document.getElementById('editUserSaldo').value = u.saldo;
+  document.getElementById('editUserGanhos').value = u.ganhos || 0;
+  abrirModal('editUserModal');
+}
+
+async function salvarEdicaoUsuario() {
+  if (!state.usuarioEditando) return;
+  showSpinner('Salvando...');
+  try {
+    const body = {
+      nome:   document.getElementById('editUserName').value.trim(),
+      email:  document.getElementById('editUserEmail').value.trim(),
+      saldo:  parseFloat(document.getElementById('editUserSaldo').value),
+      ganhos: parseFloat(document.getElementById('editUserGanhos').value),
+    };
+    const res = await apiPut(`/admin/usuario/${state.usuarioEditando.telefone}`, body);
+    if (res.ok) {
+      await carregarUsuariosDoServidor();
+      fecharModal('editUserModal');
+      toast('Usuário atualizado!', 'success');
+      registrarAtividade(state.usuarioEditando.telefone, 'admin-edit', 'Dados editados pelo admin');
+      state.usuarioEditando = null;
+    } else {
+      toast('Erro ao atualizar usuário', 'danger');
+    }
+  } catch (_) {
+    toast('Servidor indisponível', 'danger');
+  } finally { hideSpinner(); }
+}
+
+async function atualizarSaldoUsuario() {
+  const tel   = document.getElementById('adminUserPhone').value.trim();
+  const saldo = parseFloat(document.getElementById('adminNewSaldo').value);
+  if (!tel || isNaN(saldo)) { toast('Preencha todos os campos', 'warning'); return; }
+  showSpinner('Atualizando saldo...');
+  try {
+    const res = await apiPost('/admin/saldo', { telefone: tel, novoSaldo: saldo });
+    if (res.ok) {
+      await carregarUsuariosDoServidor();
+      document.getElementById('adminUserPhone').value = '';
+      document.getElementById('adminNewSaldo').value  = '';
+      toast(`Saldo atualizado: ${formatarMoeda(saldo)}`, 'success');
+      registrarAtividade(tel, 'admin-update', `Saldo → ${formatarMoeda(saldo)}`);
+    } else {
+      toast('Usuário não encontrado', 'danger');
+    }
+  } catch (_) { toast('Servidor indisponível', 'danger'); }
+  finally { hideSpinner(); }
+}
+
+async function registrarGanho() {
+  const tel   = document.getElementById('adminGanhoPhone').value.trim();
+  const valor = parseFloat(document.getElementById('adminGanhoValor').value);
+  if (!tel || isNaN(valor)) { toast('Preencha todos os campos', 'warning'); return; }
+  showSpinner('Registrando ganho...');
+  try {
+    const res = await apiPost('/admin/ganho', { telefone: tel, valor });
+    if (res.ok) {
+      await carregarUsuariosDoServidor();
+      document.getElementById('adminGanhoPhone').value = '';
+      document.getElementById('adminGanhoValor').value = '';
+      toast(`Ganho de ${formatarMoeda(valor)} registrado!`, 'success');
+      registrarAtividade(tel, 'admin-ganho', `Ganho: ${formatarMoeda(valor)}`);
+    } else {
+      toast('Usuário não encontrado', 'danger');
+    }
+  } catch (_) { toast('Servidor indisponível', 'danger'); }
+  finally { hideSpinner(); }
+}
+
+// ═══════════════════════════════════════════════════════
+// CONFIGURAÇÕES ADMIN
+// ═══════════════════════════════════════════════════════
+function abrirModal(id) {
+  document.getElementById(id).classList.add('active');
+  if (id === 'configModal') carregarConfiguracoes();
+}
+
+function fecharModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+function carregarConfiguracoes() {
+  const container = document.getElementById('planosConfig');
+  container.innerHTML = '';
+  PLANOS.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.style.cssText = 'background:var(--black-lighter);padding:18px;border-radius:12px;margin-bottom:14px;';
+    div.innerHTML = `
+      <div style="font-family:'Syne',sans-serif;font-weight:700;color:var(--gold);margin-bottom:14px;">Nível ${p.nivel}</div>
+      <div class="input-group" style="margin-bottom:12px;">
+        <label>Valor do Investimento (Kz)</label>
+        <input type="number" id="pVal${i}" value="${p.valor}" step="0.01">
+      </div>
+      <div class="input-group" style="margin-bottom:0;">
+        <label>Ganho Mensal (Kz)</label>
+        <input type="number" id="pMensal${i}" value="${p.ganhoMensal}" step="0.01">
+      </div>
+    `;
+    container.appendChild(div);
+  });
+}
+
+function salvarConfiguracoes() {
+  PLANOS.forEach((p, i) => {
+    const valor  = parseFloat(document.getElementById(`pVal${i}`).value);
+    const mensal = parseFloat(document.getElementById(`pMensal${i}`).value);
+    p.valor       = valor;
+    p.ganhoMensal = mensal;
+    p.ganhoDiario = mensal / 30;
+    p.taxa        = (mensal / valor) * 100;
+  });
+  localStorage.setItem('planos_investimento', JSON.stringify(PLANOS));
+  carregarPlanosInvestimento();
+  fecharModal('configModal');
+  toast('Configurações salvas!', 'success');
+}
+
+// ═══════════════════════════════════════════════════════
+// ATIVIDADE LOG
+// ═══════════════════════════════════════════════════════
+function registrarAtividade(telefone, tipo, descricao) {
+  state.atividades.push({ telefone, tipo, descricao, data: new Date().toISOString() });
+  if (state.atividades.length > 100) state.atividades = state.atividades.slice(-100);
+  sessionStorage.setItem('atividades', JSON.stringify(state.atividades));
+  if (state.isAdmin) carregarPainelAdmin();
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILITÁRIOS
+// ═══════════════════════════════════════════════════════
+function formatarMoeda(v) {
+  return Number(v).toLocaleString('pt-AO', { minimumFractionDigits:2, maximumFractionDigits:2 }) + ' Kz';
+}
+
+// ═══════════════════════════════════════════════════════
+// INICIALIZAÇÃO
+// ═══════════════════════════════════════════════════════
+window.addEventListener('load', async () => {
+  const token = sessionStorage.getItem('authToken');
+  if (!token) return;
+
+  showSpinner('Verificando sessão...');
+  try {
+    const res = await apiGet('/auth/verificar');
+    if (res.ok) {
+      const data = await res.json();
+      state.authToken = token;
+      if (data.usuario.email === CONFIG.ADMIN_EMAIL) {
+        state.usuario = { nome:'Administrador', email:CONFIG.ADMIN_EMAIL, telefone:'+244 921 402 002', saldo:0, ganhos:0, investimentos:[] };
+        state.isAdmin = true;
+        await carregarUsuariosDoServidor();
+      } else {
+        state.usuario = data.usuario;
+        state.isAdmin = false;
+      }
+      iniciarTimerSessao();
+      mostrarDashboard();
+    } else {
+      sessionStorage.removeItem('authToken');
+    }
+  } catch (_) {
+    sessionStorage.removeItem('authToken');
+  } finally {
+    hideSpinner();
+  }
+});
+
+// Fechar modal ao clicar fora
+window.addEventListener('click', e => {
+  if (e.target.classList.contains('modal')) fecharModal(e.target.id);
+});
+
+// Prevenir duplo tap zoom no mobile
+let lastTouch = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouch < 300) e.preventDefault();
+  lastTouch = now;
+}, { passive: false });
+</script>
+
+</body>
+</html>
